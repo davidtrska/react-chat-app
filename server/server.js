@@ -32,8 +32,9 @@ const httpServer = http.createServer((req, res) => {
 // attach websocket server to http server
 const wss = new WebSocket.Server({ server: httpServer })
 
-httpServer.listen(8080, () => {
-  console.log('Server running on http://localhost:8080')
+const PORT = process.env.PORT || 8080
+httpServer.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`)
 })
 
 wss.on('connection', (socket) => {
