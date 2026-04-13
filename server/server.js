@@ -41,7 +41,13 @@ wss.on('connection', (socket) => {
   console.log('Someone connected')
 
   socket.on('message', (data) => {
-    const event = JSON.parse(data)
+    let event;
+    try {
+      event = JSON.parse(data);
+    } catch (error) {
+      console.error('Invalid message received:', error);
+      return;
+    }
     
     if (event.type === 'join') {
       handleJoin(socket, event)
