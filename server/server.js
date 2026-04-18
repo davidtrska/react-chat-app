@@ -3,6 +3,9 @@ const url = require('url')
 const WebSocket = require('ws')
 const bcrypt = require('bcrypt')
 const db = require('./database')
+const jwt = require('jsonwebtoken')
+
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret'
 
 const rooms = {}
 const connectedUsers = new Set()
@@ -44,7 +47,8 @@ const httpServer = http.createServer((req, res) => {
       db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run(username, hash)
 
       res.writeHead(201, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify({ success: true }))
+      const token = jwt.sign({ username }, JWT_SECRET)
+      res.end(JSON.stringify({ token }))
     })
     return
   }
@@ -65,7 +69,9 @@ const httpServer = http.createServer((req, res) => {
       const match = await bcrypt.compare(password, user.password)
       if (match) {
         res.writeHead(200, { 'Content-Type': 'application/json' })
-        res.end(JSON.stringify({ success: true }))
+        const token = jwt.sign({ username: user.username }, JWT_SECRET)
+        res.end(JSON.stringify({ token }))
+
       } else {
         res.writeHead(400, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ error: 'Invalid username or password' }))
