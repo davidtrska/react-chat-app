@@ -1,4 +1,6 @@
 const WebSocket = require('ws')
+const db = require('./database')
+const bcrypt = require('bcrypt')
 const rooms = {} // { roomId: { users: {}, history: [] } }
 
 const http = require('http')
@@ -16,6 +18,36 @@ const httpServer = http.createServer((req, res) => {
   const taken = isUsernameTaken(username)
   res.writeHead(200, { 'Content-Type': 'application/json' })
   res.end(JSON.stringify({ taken }))
+  return
+}
+
+if (pathname === '/register' && req.method === 'POST') {
+  let body = ''
+  req.on('data', chunk => body += chunk)
+  req.on('end', async () => {
+    const { username, password } = JSON.parse(body)
+
+  // Check if username exists in db
+  const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username)
+
+  if(user){
+    res.writeHead(400, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ error: 'Username already taken' }))
+
+    return
+  }else{
+
+    const hash = await bcrypt.hash(password, 10) // simpler, same result
+    db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run(username, hash)
+
+    res.writeHead(201, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ success: true }))
+
+  }
+
+
+   
+  })
   return
 }
 
