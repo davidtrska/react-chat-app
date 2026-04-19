@@ -2,17 +2,23 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MessageSquare, ArrowRight } from 'lucide-react'
 
-export default function Login() {
+export default function Register() {
   const navigate = useNavigate()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [repeatPassword, setRepeatPassword] = useState('')
   const [error, setError] = useState('')
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (username.trim() === '') return
 
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/login`, {
+    if (password !== repeatPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
+    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -36,7 +42,7 @@ export default function Login() {
         </div>
         <h1>chat<span>.app</span></h1>
         <p style={{ marginBottom: '1.8rem', fontSize: '0.85rem' }}>
-          Welcome back
+          Create an account to get started
         </p>
 
         <form onSubmit={handleSubmit}>
@@ -54,7 +60,14 @@ export default function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               type="password"
-              placeholder="your password..."
+              placeholder="something secret..."
+            />
+            <label>Repeat Password</label>
+            <input
+              value={repeatPassword}
+              onChange={(e) => setRepeatPassword(e.target.value)}
+              type="password"
+              placeholder="same thing again..."
             />
             {error && (
               <p style={{ color: 'var(--accent)', fontSize: '0.8rem', marginTop: '0.5rem' }}>
@@ -63,15 +76,15 @@ export default function Login() {
             )}
           </div>
           <button type="submit" className="btn btn-primary">
-            Log in <ArrowRight size={15} />
+            Register <ArrowRight size={15} />
           </button>
           <p style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.8rem' }}>
-            No account yet?{' '}
+            Already have an account?{' '}
             <span
               style={{ color: 'var(--accent)', cursor: 'pointer' }}
-              onClick={() => navigate('/register')}
+              onClick={() => navigate('/login')}
             >
-              Register
+              Log in
             </span>
           </p>
         </form>
