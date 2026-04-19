@@ -136,13 +136,25 @@ function isUsernameTaken(username) {
 // ── WebSocket Handlers ───────────────────────────────────────────────────────
 
 function handleJoin(socket, event) {
-  const { username, roomId } = event
+    const { roomId, token } = event
+
+   let username
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET)
+      username = decoded.username
+    } catch {
+      socket.send(JSON.stringify({ type: 'error', message: 'Invalid token' }))
+      return
+    }
 
   if (!rooms[roomId]) rooms[roomId] = { users: {}, history: [] }
 
+  // if user is already connected (e.g. after refresh), clean up the old session
   if (connectedUsers.has(username)) {
-    socket.send(JSON.stringify({ type: 'error', message: `Username "${username}" is already taken` }))
-    return
+    connectedUsers.delete(username)
+    if (rooms[roomId]?.users[username]) {
+      delete rooms[roomId].users[username]
+    }
   }
 
   connectedUsers.add(username)
