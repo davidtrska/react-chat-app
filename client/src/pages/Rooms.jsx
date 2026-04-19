@@ -1,10 +1,12 @@
 import { useNavigate } from "react-router-dom"
 import { useState } from "react"
 import { Hash, Plus, Settings, ArrowRight } from 'lucide-react'
+import { jwtDecode } from 'jwt-decode'
 
 export default function Rooms() {
   const navigate = useNavigate()
-  const username = sessionStorage.getItem("username")
+  const token = localStorage.getItem('token')
+  const username = jwtDecode(token).username
   const [newRoom, setNewRoom] = useState("")
   const [rooms, setRooms] = useState(["general", "random", "tech"])
 

@@ -1,21 +1,21 @@
 import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
 import { User, Save, LogOut } from 'lucide-react'
+import { jwtDecode } from 'jwt-decode'
 
 export default function Settings() {
   const navigate = useNavigate()
-  const [username, setUsername] = useState(sessionStorage.getItem('username') || '')
+  const token = localStorage.getItem('token')
+  const username = jwtDecode(token).username
 
   function handleSave(e) {
     e.preventDefault()
     if (username.trim() === '') return
-    sessionStorage.setItem('username', username)
     navigate('/rooms')
   }
 
   function handleLogout() {
-    sessionStorage.clear()
-    navigate('/')
+    localStorage.clear()
+    navigate('/login')
   }
 
   return (
@@ -31,9 +31,9 @@ export default function Settings() {
             <label>Display Name</label>
             <input
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
               type="text"
               placeholder="your name..."
+              readOnly
             />
           </div>
           <button type="submit" className="btn btn-primary">

@@ -1,10 +1,13 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Send, Hash } from "lucide-react";
+import { jwtDecode } from 'jwt-decode'
+
 
 export default function Chat() {
   const { roomId } = useParams();
-  const username = sessionStorage.getItem("username");
+  const token = localStorage.getItem('token')
+  const username = jwtDecode(token).username
   const navigate = useNavigate();
 
   const [messages, setMessages] = useState([]);
