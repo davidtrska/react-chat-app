@@ -42,7 +42,7 @@ export default function Chat() {
     wsRef.current = ws;
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: "join", username, roomId }));
+      ws.send(JSON.stringify({ type: "join", token, roomId }));
     };
 
     ws.onmessage = (e) => {
