@@ -15,7 +15,7 @@ const connectedUsers = new Set()
 const httpServer = http.createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204)
@@ -58,6 +58,30 @@ const httpServer = http.createServer((req, res) => {
       const token = jwt.sign({ username }, JWT_SECRET)
       res.end(JSON.stringify({ token }))
     })
+    return
+  }
+
+  if (pathname === '/rooms' && req.method === 'GET') {
+    const authHeader = req.headers.authorization
+    if (!authHeader) {
+      res.writeHead(401, { 'Content-Type': 'application/json' })
+      res.end()
+      return
+    }
+
+    const token = authHeader.slice(7)
+
+    try {
+      jwt.verify(token, JWT_SECRET)
+    } catch {
+      res.writeHead(401, { 'Content-Type': 'application/json' })
+      res.end()
+      return
+    }
+
+    const allRooms = db.prepare('SELECT id, name FROM rooms ORDER BY created_at').all()
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ rooms: allRooms }))
     return
   }
 
