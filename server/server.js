@@ -139,6 +139,7 @@ wss.on('connection', (socket) => {
     if (event.type === 'message')  handleMessage(socket, event)
     if (event.type === 'reaction') handleReaction(socket, event)
     if (event.type === 'typing')   handleTyping(socket, event)
+    if (event.type === 'create-room') handleCreateRoom(socket, event)
   })
 
   socket.on('close', () => {
@@ -158,6 +159,36 @@ function isUsernameTaken(username) {
 }
 
 // ── WebSocket Handlers ───────────────────────────────────────────────────────
+
+function handleCreateRoom(socket, event) {
+  if (!socket.username) {
+    socket.send(JSON.stringify({ type: 'error', message: 'Not authenticated' }))
+    return
+  }
+
+  const roomName = event.name
+  if (!roomName || roomName.trim().length === 0 || roomName.length > 50) {
+    socket.send(JSON.stringify({ type: 'error', message: 'Invalid room name' }))
+    return
+  }
+
+  const user = db.prepare('SELECT id FROM users WHERE username = ?').get(socket.username)
+
+  try {
+    db.prepare('INSERT INTO rooms (name, created_by) VALUES (?, ?)').run(roomName.trim(), user.id)
+  } catch (error) {
+    socket.send(JSON.stringify({ type: 'error', message: 'Room name already taken' }))
+    return
+  }
+
+  const allRooms = db.prepare('SELECT id, name FROM rooms ORDER BY created_at').all()
+  const payload = JSON.stringify({ type: 'rooms-updated', rooms: allRooms })
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(payload)
+    }
+  })
+}
 
 function handleJoin(socket, event) {
     const { roomId, token } = event
