@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Hash, Plus, Settings, ArrowRight } from 'lucide-react'
 import { jwtDecode } from 'jwt-decode'
 
@@ -8,7 +8,19 @@ export default function Rooms() {
   const token = localStorage.getItem('token')
   const username = jwtDecode(token).username
   const [newRoom, setNewRoom] = useState("")
-  const [rooms, setRooms] = useState(["general", "random", "tech"])
+  const [rooms, setRooms] =  useState([])
+
+    useEffect(() => {
+      async function loadRooms() {
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/rooms`, {
+          method: "GET",
+          headers: { Authorization: "Bearer " + token },
+        });
+        const data = await res.json();
+        setRooms(data.rooms);
+      }
+      loadRooms();
+    }, []);
 
   function handleSubmit(e) {
     e.preventDefault()
