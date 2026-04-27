@@ -41,13 +41,13 @@ export default function Rooms() {
       <div className="rooms-list">
         {rooms.map((room) => (
           <button
-            key={room}
+            key={room.id}
             className="room-item"
-            onClick={() => navigate(`/chat/${room}`)}
+            onClick={() => navigate(`/chat/${room.name}`)}
           >
             <span className="room-name">
               <Hash size={13} style={{ marginRight: '0.4rem', opacity: 0.5 }} />
-              {room}
+              {room.name}
             </span>
             <ArrowRight size={15} className="room-arrow" />
           </button>
