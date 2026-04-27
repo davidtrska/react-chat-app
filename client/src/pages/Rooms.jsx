@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Hash, Plus, Settings, ArrowRight } from 'lucide-react'
 import { jwtDecode } from 'jwt-decode'
+
 
 export default function Rooms() {
   const navigate = useNavigate()
@@ -9,6 +10,8 @@ export default function Rooms() {
   const username = jwtDecode(token).username
   const [newRoom, setNewRoom] = useState("")
   const [rooms, setRooms] =  useState([])
+  const socketRef = useRef(null)
+
 
     useEffect(() => {
       async function loadRooms() {
@@ -20,12 +23,28 @@ export default function Rooms() {
         setRooms(data.rooms);
       }
       loadRooms();
+
+      const ws = new WebSocket(
+        import.meta.env.VITE_BACKEND_URL.replace("http", "ws"),
+      );
+      socketRef.current = ws;
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: "auth", token }));
+      };
+
+      ws.onmessage = (e) => {
+        const event = JSON.parse(e.data);
+        if (event.type === "rooms-updated") {
+          setRooms(event.rooms);
+        }
+      };
+      return () => ws.close();
     }, []);
 
   function handleSubmit(e) {
     e.preventDefault()
     if (newRoom.trim() === "") return
-    setRooms([...rooms, newRoom])
+    socketRef.current.send(JSON.stringify({ type: "create-room", name: newRoom }));
     setNewRoom("")
   }
 

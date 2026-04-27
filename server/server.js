@@ -140,6 +140,7 @@ wss.on('connection', (socket) => {
     if (event.type === 'reaction') handleReaction(socket, event)
     if (event.type === 'typing')   handleTyping(socket, event)
     if (event.type === 'create-room') handleCreateRoom(socket, event)
+    if (event.type === 'auth') handleAuth(socket, event)
   })
 
   socket.on('close', () => {
@@ -188,6 +189,18 @@ function handleCreateRoom(socket, event) {
       client.send(payload)
     }
   })
+}
+
+function handleAuth(socket, event) {
+  const { token } = event;
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    socket.username = decoded.username;
+  } catch {
+    socket.send(JSON.stringify({ type: "error", message: "Invalid token" }));
+    return;
+  }
 }
 
 function handleJoin(socket, event) {
