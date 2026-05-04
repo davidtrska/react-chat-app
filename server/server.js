@@ -243,15 +243,19 @@ function handleJoin(socket, event) {
 
 function handleMessage(socket, event) {
   const { roomId, text } = event
-  const message = {
-    id: Date.now(),
+ 
+  const user = db.prepare('SELECT id FROM users WHERE username = ?').get(socket.username)
+  const room = db.prepare('SELECT id FROM rooms WHERE name = ?').get(roomId)
+
+  const result = db.prepare('INSERT INTO messages (user_id, room_id, text) VALUES (?, ?, ?)').run(user.id, room.id, text)
+
+   const message = {
+    id: result.lastInsertRowid,
     username: socket.username,
     text,
     ts: new Date().toISOString(),
     reactions: {}
   }
-
-  rooms[roomId].history.push(message)
 
   Object.values(rooms[roomId].users).forEach(userSocket =>
     userSocket.send(JSON.stringify({ type: 'message', ...message }))
