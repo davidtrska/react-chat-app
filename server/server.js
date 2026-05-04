@@ -215,6 +215,10 @@ function handleJoin(socket, event) {
       return
     }
 
+    const room = db.prepare("SELECT id FROM rooms WHERE name = ?").get(roomId);
+    const rows = db.prepare(`SELECT messages.id, messages.text, users.username, messages.created_at AS ts FROM messages JOIN users ON messages.user_id = users.id WHERE messages.room_id = ? ORDER BY messages.id DESC LIMIT 20`,).all(room.id);
+    const history = rows.reverse().map(m => ({ ...m, reactions: {} }))
+
   if (!rooms[roomId]) rooms[roomId] = { users: {}, history: [] }
 
   // if user is already connected (e.g. after refresh), clean up the old session
@@ -234,7 +238,7 @@ function handleJoin(socket, event) {
 
   socket.send(JSON.stringify({
     type: 'joined',
-    history: rooms[roomId].history,
+    history: history,
     users: Object.keys(rooms[roomId].users)
   }))
 
