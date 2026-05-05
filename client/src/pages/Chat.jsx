@@ -35,6 +35,8 @@ export default function Chat() {
   const wsRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const bottomRef = useRef(null);
+  const isLoadingMoreRef = useRef(false);
+  const hasMoreMessages = useRef(true);
 
   useEffect(() => {
     const wsUrl = import.meta.env.VITE_BACKEND_URL.replace('http', 'ws');
@@ -68,6 +70,14 @@ export default function Chat() {
             : msg
         ))
       }
+      if (event.type === 'more-messages') {
+        isLoadingMoreRef.current = true;
+        setMessages(prev => [...event.messages, ...prev]);
+        if (event.messages.length === 0) {
+          hasMoreMessages.current = false;
+        }
+      }
+
       if (event.type === "error") {
         setJoinError(event.message);
       }
@@ -77,7 +87,10 @@ export default function Chat() {
   }, []);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (isLoadingMoreRef.current === false) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    isLoadingMoreRef.current = false;
   }, [messages]);
 
   function handleSend(e) {
@@ -107,6 +120,18 @@ export default function Chat() {
   function formatTime(ts) {
     if (!ts) return "";
     return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function handleScroll(e) {
+    if (e.target.scrollTop === 0 && messages.length > 0 && hasMoreMessages.current === true) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: "load-more-messages",
+          roomId,
+          before: messages[0].id, // id of the oldest message we currently have
+        }),
+      );
+    }
   }
 
   if (joinError) {
@@ -139,7 +164,7 @@ export default function Chat() {
           <span className="chat-user">{username}</span>
         </div>
 
-        <div className="chat-messages">
+        <div className="chat-messages" onScroll={handleScroll}>
           {messages.map((msg) => (
             <div key={msg.id} className={`message ${msg.username === username ? 'message-own' : ''}`}>
               <span className="message-username">{msg.username}</span>
