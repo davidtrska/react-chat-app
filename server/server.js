@@ -141,6 +141,7 @@ wss.on('connection', (socket) => {
     if (event.type === 'typing')   handleTyping(socket, event)
     if (event.type === 'create-room') handleCreateRoom(socket, event)
     if (event.type === 'auth') handleAuth(socket, event)
+    if (event.type === 'load-more-messages') handleLoadMore(socket, event)
   })
 
   socket.on('close', () => {
@@ -264,6 +265,14 @@ function handleMessage(socket, event) {
   Object.values(rooms[roomId].users).forEach(userSocket =>
     userSocket.send(JSON.stringify({ type: 'message', ...message }))
   )
+}
+function handleLoadMore(socket, event) {
+   const { roomId, before } = event
+   const room = db.prepare('SELECT id FROM rooms WHERE name = ?').get(roomId)
+   const rows = db.prepare(`SELECT messages.id, messages.text, users.username, messages.created_at AS ts FROM messages JOIN users ON messages.user_id = users.id WHERE messages.room_id = ? AND messages.id < ? ORDER BY messages.id DESC LIMIT 20`,).all(room.id, before);
+   const history = rows.reverse().map(m => ({ ...m, reactions: {} }))
+
+  socket.send(JSON.stringify({ type: 'more-messages', messages: history }))
 }
 
 function handleReaction(socket, event) {
