@@ -25,12 +25,11 @@ export default function Rooms() {
       loadRooms();
 
       const ws = new WebSocket(
-        import.meta.env.VITE_BACKEND_URL.replace("http", "ws"),
-      );
+        `${import.meta.env.VITE_BACKEND_URL.replace('http', 'ws')}?token=${token}`
+      )
+      
       socketRef.current = ws;
-      ws.onopen = () => {
-        ws.send(JSON.stringify({ type: "auth", token }));
-      };
+    
 
       ws.onmessage = (e) => {
         const event = JSON.parse(e.data);

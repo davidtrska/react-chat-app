@@ -39,12 +39,13 @@ export default function Chat() {
   const hasMoreMessages = useRef(true);
 
   useEffect(() => {
-    const wsUrl = import.meta.env.VITE_BACKEND_URL.replace('http', 'ws');
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(
+        `${import.meta.env.VITE_BACKEND_URL.replace('http', 'ws')}?token=${token}`
+      )
     wsRef.current = ws;
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ type: "join", token, roomId }));
+      ws.send(JSON.stringify({ type: "join", roomId }));
     };
 
     ws.onmessage = (e) => {

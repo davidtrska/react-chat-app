@@ -123,7 +123,21 @@ httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`))
 
 const wss = new WebSocket.Server({ server: httpServer })
 
-wss.on('connection', (socket) => {
+wss.on('connection', (socket, req) => {
+  const url = new URL(req.url, 'http://localhost')
+  const token = url.searchParams.get('token')
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    socket.username = decoded.username;
+  } catch {
+    socket.send(JSON.stringify({ type: "error", message: "Invalid token" }));
+    socket.close(1008, 'Invalid token')
+    return;
+  }
+
+
+
   console.log('Someone connected')
 
   socket.on('message', (data) => {
@@ -140,7 +154,6 @@ wss.on('connection', (socket) => {
     if (event.type === 'reaction') handleReaction(socket, event)
     if (event.type === 'typing')   handleTyping(socket, event)
     if (event.type === 'create-room') handleCreateRoom(socket, event)
-    if (event.type === 'auth') handleAuth(socket, event)
     if (event.type === 'load-more-messages') handleLoadMore(socket, event)
   })
 
@@ -207,30 +220,12 @@ function handleCreateRoom(socket, event) {
   })
 }
 
-function handleAuth(socket, event) {
-  const { token } = event;
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    socket.username = decoded.username;
-  } catch {
-    socket.send(JSON.stringify({ type: "error", message: "Invalid token" }));
-    return;
-  }
-}
 
 function handleJoin(socket, event) {
-  const { roomId, token } = event
+  const { roomId } = event
 
-  let username
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET)
-    username = decoded.username
-  } catch {
-    socket.send(JSON.stringify({ type: 'error', message: 'Invalid token' }))
-    return
-  }
-
+  const username = socket.username
+  
   const room = db.prepare('SELECT id FROM rooms WHERE name = ?').get(roomId)
   const rows = db.prepare(
     'SELECT messages.id, messages.text, users.username, messages.created_at AS ts FROM messages JOIN users ON messages.user_id = users.id WHERE messages.room_id = ? ORDER BY messages.id DESC LIMIT 20'
@@ -248,7 +243,6 @@ function handleJoin(socket, event) {
   }
 
   connectedUsers.add(username)
-  socket.username = username
   socket.roomId = roomId
   rooms[roomId].users[username] = socket
 
