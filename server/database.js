@@ -24,6 +24,14 @@ db.exec(`
     text       TEXT    NOT NULL,
     created_at TEXT    DEFAULT CURRENT_TIMESTAMP
   );
+
+   CREATE TABLE IF NOT EXISTS reactions (
+   id         INTEGER PRIMARY KEY AUTOINCREMENT,
+   user_id    INTEGER NOT NULL REFERENCES users(id),
+   emoji       TEXT    NOT NULL,
+   message_id  INTEGER NOT NULL REFERENCES messages(id),
+   UNIQUE(emoji, message_id, user_id)
+   )
 `)
 
 const insertRoom = db.prepare('INSERT OR IGNORE INTO rooms (name, created_by) VALUES (?, ?)');

@@ -160,6 +160,21 @@ function isUsernameTaken(username) {
   return connectedUsers.has(username)
 }
 
+function getReactionsForMessage(messageId) {
+  const reactions = db.prepare(
+    'SELECT reactions.emoji, users.username FROM reactions JOIN users ON users.id = reactions.user_id WHERE reactions.message_id = ?'
+  ).all(messageId)
+
+  const result = {}
+  for (const row of reactions) {
+    if (!result[row.emoji]) {
+      result[row.emoji] = []
+    }
+    result[row.emoji].push(row.username)
+  }
+  return result
+}
+
 // ── WebSocket Handlers ───────────────────────────────────────────────────────
 
 function handleCreateRoom(socket, event) {
@@ -205,20 +220,22 @@ function handleAuth(socket, event) {
 }
 
 function handleJoin(socket, event) {
-    const { roomId, token } = event
+  const { roomId, token } = event
 
-   let username
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET)
-      username = decoded.username
-    } catch {
-      socket.send(JSON.stringify({ type: 'error', message: 'Invalid token' }))
-      return
-    }
+  let username
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET)
+    username = decoded.username
+  } catch {
+    socket.send(JSON.stringify({ type: 'error', message: 'Invalid token' }))
+    return
+  }
 
-    const room = db.prepare("SELECT id FROM rooms WHERE name = ?").get(roomId);
-    const rows = db.prepare(`SELECT messages.id, messages.text, users.username, messages.created_at AS ts FROM messages JOIN users ON messages.user_id = users.id WHERE messages.room_id = ? ORDER BY messages.id DESC LIMIT 20`,).all(room.id);
-    const history = rows.reverse().map(m => ({ ...m, reactions: {} }))
+  const room = db.prepare('SELECT id FROM rooms WHERE name = ?').get(roomId)
+  const rows = db.prepare(
+    'SELECT messages.id, messages.text, users.username, messages.created_at AS ts FROM messages JOIN users ON messages.user_id = users.id WHERE messages.room_id = ? ORDER BY messages.id DESC LIMIT 20'
+  ).all(room.id)
+  const history = rows.reverse().map(m => ({ ...m, reactions: getReactionsForMessage(m.id) }))
 
   if (!rooms[roomId]) rooms[roomId] = { users: {}, history: [] }
 
@@ -239,7 +256,7 @@ function handleJoin(socket, event) {
 
   socket.send(JSON.stringify({
     type: 'joined',
-    history: history,
+    history,
     users: Object.keys(rooms[roomId].users)
   }))
 
@@ -248,13 +265,15 @@ function handleJoin(socket, event) {
 
 function handleMessage(socket, event) {
   const { roomId, text } = event
- 
+
   const user = db.prepare('SELECT id FROM users WHERE username = ?').get(socket.username)
   const room = db.prepare('SELECT id FROM rooms WHERE name = ?').get(roomId)
 
-  const result = db.prepare('INSERT INTO messages (user_id, room_id, text) VALUES (?, ?, ?)').run(user.id, room.id, text)
+  const result = db.prepare(
+    'INSERT INTO messages (user_id, room_id, text) VALUES (?, ?, ?)'
+  ).run(user.id, room.id, text)
 
-   const message = {
+  const message = {
     id: result.lastInsertRowid,
     username: socket.username,
     text,
@@ -266,33 +285,34 @@ function handleMessage(socket, event) {
     userSocket.send(JSON.stringify({ type: 'message', ...message }))
   )
 }
+
 function handleLoadMore(socket, event) {
-   const { roomId, before } = event
-   const room = db.prepare('SELECT id FROM rooms WHERE name = ?').get(roomId)
-   const rows = db.prepare(`SELECT messages.id, messages.text, users.username, messages.created_at AS ts FROM messages JOIN users ON messages.user_id = users.id WHERE messages.room_id = ? AND messages.id < ? ORDER BY messages.id DESC LIMIT 20`,).all(room.id, before);
-   const history = rows.reverse().map(m => ({ ...m, reactions: {} }))
+  const { roomId, before } = event
+  const room = db.prepare('SELECT id FROM rooms WHERE name = ?').get(roomId)
+  const rows = db.prepare(
+    'SELECT messages.id, messages.text, users.username, messages.created_at AS ts FROM messages JOIN users ON messages.user_id = users.id WHERE messages.room_id = ? AND messages.id < ? ORDER BY messages.id DESC LIMIT 20'
+  ).all(room.id, before)
+  const history = rows.reverse().map(m => ({ ...m, reactions: getReactionsForMessage(m.id) }))
 
   socket.send(JSON.stringify({ type: 'more-messages', messages: history }))
 }
 
 function handleReaction(socket, event) {
   const { messageId, emoji, roomId } = event
-  const message = rooms[roomId].history.find(m => m.id === messageId)
-  if (!message) return
+  const user = db.prepare('SELECT id FROM users WHERE username = ?').get(socket.username)
 
-  if (!message.reactions[emoji]) message.reactions[emoji] = []
+  const result = db.prepare(
+    'DELETE FROM reactions WHERE message_id = ? AND user_id = ? AND emoji = ?'
+  ).run(messageId, user.id, emoji)
 
-  const index = message.reactions[emoji].indexOf(socket.username)
-  if (index === -1) {
-    message.reactions[emoji].push(socket.username)
-  } else {
-    message.reactions[emoji].splice(index, 1)
+  if (result.changes === 0) {
+    db.prepare(
+      'INSERT INTO reactions (user_id, emoji, message_id) VALUES (?, ?, ?)'
+    ).run(user.id, emoji, messageId)
   }
 
-  if (message.reactions[emoji].length === 0) delete message.reactions[emoji]
-
   Object.values(rooms[roomId].users).forEach(userSocket =>
-    userSocket.send(JSON.stringify({ type: 'reaction', messageId, reactions: message.reactions }))
+    userSocket.send(JSON.stringify({ type: 'reaction', messageId, reactions: getReactionsForMessage(messageId) }))
   )
 }
 
