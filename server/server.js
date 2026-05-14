@@ -123,22 +123,38 @@ httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`))
 
 const wss = new WebSocket.Server({ server: httpServer })
 
+const HEARTBEAT_INTERVAL_MS = 30000
+
+const heartbeatInterval = setInterval(() => {
+  wss.clients.forEach(client => {
+    if (client.isAlive === false) {
+      return client.terminate()
+    }
+    client.isAlive = false
+    client.ping()
+  })
+}, HEARTBEAT_INTERVAL_MS)
+
+wss.on('close', () => {
+  clearInterval(heartbeatInterval)
+})
+
 wss.on('connection', (socket, req) => {
   const url = new URL(req.url, 'http://localhost')
   const token = url.searchParams.get('token')
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    socket.username = decoded.username;
+    const decoded = jwt.verify(token, JWT_SECRET)
+    socket.username = decoded.username
   } catch {
-    socket.send(JSON.stringify({ type: "error", message: "Invalid token" }));
     socket.close(1008, 'Invalid token')
-    return;
+    return
   }
 
+  socket.isAlive = true
+  socket.on('pong', () => { socket.isAlive = true })
 
-
-  console.log('Someone connected')
+  console.log(`${socket.username} connected`)
 
   socket.on('message', (data) => {
     let event
@@ -149,11 +165,11 @@ wss.on('connection', (socket, req) => {
       return
     }
 
-    if (event.type === 'join')     handleJoin(socket, event)
-    if (event.type === 'message')  handleMessage(socket, event)
-    if (event.type === 'reaction') handleReaction(socket, event)
-    if (event.type === 'typing')   handleTyping(socket, event)
-    if (event.type === 'create-room') handleCreateRoom(socket, event)
+    if (event.type === 'join')              handleJoin(socket, event)
+    if (event.type === 'message')           handleMessage(socket, event)
+    if (event.type === 'reaction')          handleReaction(socket, event)
+    if (event.type === 'typing')            handleTyping(socket, event)
+    if (event.type === 'create-room')       handleCreateRoom(socket, event)
     if (event.type === 'load-more-messages') handleLoadMore(socket, event)
   })
 
