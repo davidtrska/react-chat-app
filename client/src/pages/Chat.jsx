@@ -37,55 +37,73 @@ export default function Chat() {
   const bottomRef = useRef(null);
   const isLoadingMoreRef = useRef(false);
   const hasMoreMessages = useRef(true);
+  const reconnectAttemptsRef = useRef(0)
+  const reconnectTimeoutRef = useRef(null)
+  const shouldReconnectRef = useRef(true)
 
   useEffect(() => {
-    const ws = new WebSocket(
+    function connect() {
+      const ws = new WebSocket(
         `${import.meta.env.VITE_BACKEND_URL.replace('http', 'ws')}?token=${token}`
       )
-    wsRef.current = ws;
+      wsRef.current = ws
 
-    ws.onopen = () => {
-      ws.send(JSON.stringify({ type: "join", roomId }));
-    };
+      ws.onopen = () => {
+        reconnectAttemptsRef.current = 0
+        ws.send(JSON.stringify({ type: "join", roomId }))
+      }
 
-    ws.onmessage = (e) => {
-      const event = JSON.parse(e.data);
+      ws.onclose = () => {
+        if (!shouldReconnectRef.current) return
+        const delay = Math.min(1000 * 2 ** reconnectAttemptsRef.current, 30000)
+        reconnectAttemptsRef.current++
+        reconnectTimeoutRef.current = setTimeout(connect, delay)
+      }
 
-      if (event.type === "joined") {
-        setMessages(event.history);
-        setUsers(event.users);
-      }
-      if (event.type === "message") {
-        setMessages((prev) => [...prev, event]);
-      }
-      if (event.type === "typing") {
-        setTypingUser(event.isTyping ? event.username : "");
-      }
-      if (event.type === "presence") {
-        setUsers(event.users);
-      }
-      if (event.type === 'reaction') {
-        setMessages(prev => prev.map(msg =>
-          msg.id === event.messageId
-            ? { ...msg, reactions: event.reactions }
-            : msg
-        ))
-      }
-      if (event.type === 'more-messages') {
-        isLoadingMoreRef.current = true;
-        setMessages(prev => [...event.messages, ...prev]);
-        if (event.messages.length === 0) {
-          hasMoreMessages.current = false;
+      ws.onmessage = (e) => {
+        const event = JSON.parse(e.data)
+
+        if (event.type === "joined") {
+          setMessages(event.history)
+          setUsers(event.users)
+        }
+        if (event.type === "message") {
+          setMessages((prev) => [...prev, event])
+        }
+        if (event.type === "typing") {
+          setTypingUser(event.isTyping ? event.username : "")
+        }
+        if (event.type === "presence") {
+          setUsers(event.users)
+        }
+        if (event.type === 'reaction') {
+          setMessages(prev => prev.map(msg =>
+            msg.id === event.messageId
+              ? { ...msg, reactions: event.reactions }
+              : msg
+          ))
+        }
+        if (event.type === 'more-messages') {
+          isLoadingMoreRef.current = true
+          setMessages(prev => [...event.messages, ...prev])
+          if (event.messages.length === 0) {
+            hasMoreMessages.current = false
+          }
+        }
+        if (event.type === "error") {
+          setJoinError(event.message)
         }
       }
+    }
 
-      if (event.type === "error") {
-        setJoinError(event.message);
-      }
-    };
+    connect()
 
-    return () => ws.close();
-  }, []);
+    return () => {
+      shouldReconnectRef.current = false
+      clearTimeout(reconnectTimeoutRef.current)
+      wsRef.current?.close()
+    }
+  }, [])
 
   useEffect(() => {
     if (isLoadingMoreRef.current === false) {
