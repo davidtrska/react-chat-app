@@ -9,7 +9,8 @@ export default function Chat() {
   const token = localStorage.getItem('token')
   const username = jwtDecode(token).username
   const navigate = useNavigate();
-
+  
+  const [status, setStatus] = useState('connecting')
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [typingUser, setTypingUser] = useState("");
@@ -43,6 +44,7 @@ export default function Chat() {
 
   useEffect(() => {
     function connect() {
+      setStatus('connecting')
       const ws = new WebSocket(
         `${import.meta.env.VITE_BACKEND_URL.replace('http', 'ws')}?token=${token}`
       )
@@ -51,6 +53,7 @@ export default function Chat() {
       ws.onopen = () => {
         reconnectAttemptsRef.current = 0
         ws.send(JSON.stringify({ type: "join", roomId }))
+        setStatus('connected')
       }
 
       ws.onclose = () => {
@@ -58,6 +61,7 @@ export default function Chat() {
         const delay = Math.min(1000 * 2 ** reconnectAttemptsRef.current, 30000)
         reconnectAttemptsRef.current++
         reconnectTimeoutRef.current = setTimeout(connect, delay)
+        setStatus('reconnecting') 
       }
 
       ws.onmessage = (e) => {
@@ -175,6 +179,7 @@ export default function Chat() {
             <button className="btn btn-ghost" onClick={() => navigate("/rooms")}>
               <ArrowLeft size={14} /> back
             </button>
+            <span className={`status-${status}`}>{status}</span>
             <span className="chat-room-name">
               <Hash size={13} style={{ marginRight: "2px", opacity: 0.5 }} />
               {roomId}

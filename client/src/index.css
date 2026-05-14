@@ -374,6 +374,58 @@ input::placeholder {
   font-family: var(--mono);
 }
 
+.status-connecting,
+.status-connected,
+.status-reconnecting,
+.status-disconnected {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.status-connecting::before,
+.status-connected::before,
+.status-reconnecting::before,
+.status-disconnected::before {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.status-connecting {
+  color: #999;
+  background: rgba(150, 150, 150, 0.12);
+}
+
+.status-connected {
+  color: #2ea043;
+  background: rgba(46, 160, 67, 0.12);
+}
+
+.status-reconnecting {
+  color: #d29922;
+  background: rgba(210, 153, 34, 0.14);
+  animation: status-pulse 1.2s ease-in-out infinite;
+}
+
+.status-disconnected {
+  color: #f85149;
+  background: rgba(248, 81, 73, 0.14);
+}
+
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.55; }
+}
+
 .chat-messages {
   flex: 1;
   overflow-y: auto;
