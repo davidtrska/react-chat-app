@@ -1,160 +1,47 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { ArrowLeft, Send, Hash } from "lucide-react";
 import { jwtDecode } from 'jwt-decode'
-
+import { useChat } from '../hooks/useChat'
 
 export default function Chat() {
   const { roomId } = useParams();
+  const navigate = useNavigate();
   const token = localStorage.getItem('token')
   const username = jwtDecode(token).username
-  const navigate = useNavigate();
-  
-  const [status, setStatus] = useState('connecting')
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState("");
-  const [typingUser, setTypingUser] = useState("");
-  const [users, setUsers] = useState([]);
-  const [joinError, setJoinError] = useState("");
 
-  // NEW — tracks which message's picker is open, by message ID
-  // null = all pickers closed. storing an ID (not just true/false) lets us
-  // know exactly WHICH message to show the picker on.
+  const {
+    status,
+    messages,
+    users,
+    typingUser,
+    joinError,
+    bottomRef,
+    sendMessage,
+    sendReaction,
+    sendTyping,
+    handleScroll
+  } = useChat(roomId)
+
+  // UI-only state
+  const [input, setInput] = useState("");
   const [openPickerId, setOpenPickerId] = useState(null);
 
-  // NEW — the emoji options shown in the picker
-  const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥','🎃'];
-
-  // NEW — maximum allowed characters in a single message
+  const EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🔥', '🎃'];
   const MAX_CHARS = 200;
-
-  // NEW — derived value, no new state needed
-  // we already have 'input' in state, so input.length gives us the count for free
-  // every time 'input' changes (every keystroke), this recalculates automatically
   const charCount = input.length;
-
-  const wsRef = useRef(null);
-  const typingTimeoutRef = useRef(null);
-  const bottomRef = useRef(null);
-  const isLoadingMoreRef = useRef(false);
-  const hasMoreMessages = useRef(true);
-  const reconnectAttemptsRef = useRef(0)
-  const reconnectTimeoutRef = useRef(null)
-  const shouldReconnectRef = useRef(true)
-
-  useEffect(() => {
-    function connect() {
-      setStatus('connecting')
-      const ws = new WebSocket(
-        `${import.meta.env.VITE_BACKEND_URL.replace('http', 'ws')}?token=${token}`
-      )
-      wsRef.current = ws
-
-      ws.onopen = () => {
-        reconnectAttemptsRef.current = 0
-        ws.send(JSON.stringify({ type: "join", roomId }))
-        setStatus('connected')
-      }
-
-      ws.onclose = () => {
-        if (!shouldReconnectRef.current) return
-        const delay = Math.min(1000 * 2 ** reconnectAttemptsRef.current, 30000)
-        reconnectAttemptsRef.current++
-        reconnectTimeoutRef.current = setTimeout(connect, delay)
-        setStatus('reconnecting') 
-      }
-
-      ws.onmessage = (e) => {
-        const event = JSON.parse(e.data)
-
-        if (event.type === "joined") {
-          setMessages(event.history)
-          setUsers(event.users)
-        }
-        if (event.type === "message") {
-          setMessages((prev) => [...prev, event])
-        }
-        if (event.type === "typing") {
-          setTypingUser(event.isTyping ? event.username : "")
-        }
-        if (event.type === "presence") {
-          setUsers(event.users)
-        }
-        if (event.type === 'reaction') {
-          setMessages(prev => prev.map(msg =>
-            msg.id === event.messageId
-              ? { ...msg, reactions: event.reactions }
-              : msg
-          ))
-        }
-        if (event.type === 'more-messages') {
-          isLoadingMoreRef.current = true
-          setMessages(prev => [...event.messages, ...prev])
-          if (event.messages.length === 0) {
-            hasMoreMessages.current = false
-          }
-        }
-        if (event.type === "error") {
-          setJoinError(event.message)
-        }
-      }
-    }
-
-    connect()
-
-    return () => {
-      shouldReconnectRef.current = false
-      clearTimeout(reconnectTimeoutRef.current)
-      wsRef.current?.close()
-    }
-  }, [])
-
-  useEffect(() => {
-    if (isLoadingMoreRef.current === false) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-    isLoadingMoreRef.current = false;
-  }, [messages]);
 
   function handleSend(e) {
     e.preventDefault();
     if (input.trim() === "") return;
-    // NEW — safety net: block sending if over the limit
-    // the button is already disabled in JSX, but this covers edge cases
     if (charCount > MAX_CHARS) return;
-    wsRef.current.send(JSON.stringify({ type: "message", roomId, text: input }));
-    wsRef.current.send(JSON.stringify({ type: "typing", roomId, isTyping: false }));
-    clearTimeout(typingTimeoutRef.current);
+    sendMessage(input);
     setInput("");
-  }
-
-  function handleReaction(msgId, emoji) {
-    wsRef.current.send(JSON.stringify({ type: 'reaction', messageId: msgId, emoji, roomId }))
-  }
-
-  function handleTyping() {
-    wsRef.current.send(JSON.stringify({ type: "typing", roomId, isTyping: true }));
-    clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = setTimeout(() => {
-      wsRef.current.send(JSON.stringify({ type: "typing", roomId, isTyping: false }));
-    }, 1000);
   }
 
   function formatTime(ts) {
     if (!ts) return "";
     return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  }
-
-  function handleScroll(e) {
-    if (e.target.scrollTop === 0 && messages.length > 0 && hasMoreMessages.current === true) {
-      wsRef.current.send(
-        JSON.stringify({
-          type: "load-more-messages",
-          roomId,
-          before: messages[0].id, // id of the oldest message we currently have
-        }),
-      );
-    }
   }
 
   if (joinError) {
@@ -196,23 +83,17 @@ export default function Chat() {
               <span className="message-ts">{formatTime(msg.ts)}</span>
 
               <div className="message-reactions">
-                {Object.entries(msg.reactions || {}).map(([emoji, users]) => (
+                {Object.entries(msg.reactions || {}).map(([emoji, reactedUsers]) => (
                   <button
                     key={emoji}
-                    className={`reaction-btn ${users.includes(username) ? 'reacted' : ''}`}
-                    onClick={() => handleReaction(msg.id, emoji)}
+                    className={`reaction-btn ${reactedUsers.includes(username) ? 'reacted' : ''}`}
+                    onClick={() => sendReaction(msg.id, emoji)}
                   >
-                    {emoji} {users.length}
+                    {emoji} {reactedUsers.length}
                   </button>
                 ))}
 
-                {/* NEW — wrapper needed so the picker can be positioned relative to the + button */}
                 <div className="emoji-picker-wrapper">
-
-                  {/* CHANGED — was: onClick sends 👍 directly
-                               now: toggles the picker open/closed
-                      toggle logic: if this message's picker is open → close it (null)
-                                    if it's closed → open it (store this message's id) */}
                   <button
                     className="reaction-add"
                     onClick={() => setOpenPickerId(openPickerId === msg.id ? null : msg.id)}
@@ -220,18 +101,15 @@ export default function Chat() {
                     +
                   </button>
 
-                  {/* NEW — only renders when openPickerId matches this message's id
-                      all other messages render nothing here */}
                   {openPickerId === msg.id && (
                     <div className="emoji-picker">
-                      {/* NEW — loop the EMOJIS array, one button per emoji */}
                       {EMOJIS.map(emoji => (
                         <button
                           key={emoji}
                           className="emoji-option"
                           onClick={() => {
-                            handleReaction(msg.id, emoji); // send the chosen reaction
-                            setOpenPickerId(null);          // close the picker
+                            sendReaction(msg.id, emoji);
+                            setOpenPickerId(null);
                           }}
                         >
                           {emoji}
@@ -240,7 +118,6 @@ export default function Chat() {
                     </div>
                   )}
                 </div>
-
               </div>
             </div>
           ))}
@@ -256,26 +133,15 @@ export default function Chat() {
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleTyping}
+              onKeyDown={sendTyping}
               placeholder={`message # ${roomId}`}
               autoFocus
             />
-            {/* CHANGED — disabled when over the limit so the user can't submit */}
             <button type="submit" className="btn" disabled={charCount > MAX_CHARS}>
               <Send size={15} />
             </button>
           </form>
 
-          {/* NEW — only show the counter when the user has started typing
-              charCount > 0 → show it,  charCount === 0 → show nothing
-
-              dynamic className controls the color:
-                default              → muted grey  (just started typing)
-                charCount > 160      → orange       (getting close)
-                charCount > MAX_CHARS → red         (over the limit)
-
-              note: the conditions are checked left to right.
-              the last matching one wins, so over-limit (red) overrides warn (orange) */}
           {charCount > 0 && (
             <div className={`char-count ${charCount > MAX_CHARS ? 'char-count-over' : charCount > 160 ? 'char-count-warn' : ''}`}>
               {charCount}/{MAX_CHARS}
