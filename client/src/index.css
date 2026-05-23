@@ -2,25 +2,31 @@
 
 /* ── Variables ── */
 :root {
-  --bg:         #111111;
-  --bg2:        #1a1a1a;
-  --surface:    #222222;
-  --surface2:   #2a2a2a;
-  --border:     #333333;
-  --border2:    #3d3d3d;
-  --text:       #f0f0f0;
-  --subtext:    #999999;
-  --muted:      #555555;
-  --accent:     #e01f1f;
+  --bg: #111111;
+  --bg2: #1a1a1a;
+  --surface: #222222;
+  --surface2: #2a2a2a;
+  --border: #333333;
+  --border2: #3d3d3d;
+  --text: #f0f0f0;
+  --subtext: #999999;
+  --muted: #555555;
+  --accent: #e01f1f;
   --accent-dim: #b81818;
-  --accent-glow:rgba(224, 31, 31, 0.15);
-  --radius:     8px;
-  --mono:       'JetBrains Mono', monospace;
-  --sans:       'Inter', sans-serif;
+  --accent-glow: rgba(224, 31, 31, 0.15);
+  --radius: 8px;
+  --mono: 'JetBrains Mono', monospace;
+  --sans: 'Inter', sans-serif;
 }
 
 /* ── Reset ── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
 body {
   background: var(--bg);
@@ -51,7 +57,7 @@ body::after {
   left: -200px;
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(224,31,31,0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(224, 31, 31, 0.08) 0%, transparent 70%);
   pointer-events: none;
   z-index: 0;
 }
@@ -105,7 +111,7 @@ p {
   padding: 2.5rem;
   width: 100%;
   max-width: 400px;
-  box-shadow: 0 4px 40px rgba(0,0,0,0.4);
+  box-shadow: 0 4px 40px rgba(0, 0, 0, 0.4);
   position: relative;
   overflow: hidden;
 }
@@ -113,7 +119,9 @@ p {
 .card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0; right: 0;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
   opacity: 0.5;
@@ -135,8 +143,8 @@ label {
   text-transform: uppercase;
 }
 
-input[type="text"],
-input[type="password"] {
+input[type='text'],
+input[type='password'] {
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -146,11 +154,13 @@ input[type="password"] {
   padding: 0.7rem 1rem;
   width: 100%;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
-input[type="text"]:focus,
-input[type="password"]:focus {
+input[type='text']:focus,
+input[type='password']:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-glow);
 }
@@ -226,10 +236,12 @@ input::placeholder {
   align-items: center;
   justify-content: center;
   margin-bottom: 1.2rem;
-  box-shadow: 0 0 20px rgba(224,31,31,0.1);
+  box-shadow: 0 0 20px rgba(224, 31, 31, 0.1);
 }
 
-.btn svg { flex-shrink: 0; }
+.btn svg {
+  flex-shrink: 0;
+}
 
 .room-name {
   display: flex;
@@ -289,7 +301,9 @@ input::placeholder {
 
 .room-arrow {
   color: var(--muted);
-  transition: color 0.15s, transform 0.15s;
+  transition:
+    color 0.15s,
+    transform 0.15s;
 }
 
 .room-item:hover .room-arrow {
@@ -307,7 +321,9 @@ input::placeholder {
   gap: 0.6rem;
 }
 
-.create-room-form input { flex: 1; }
+.create-room-form input {
+  flex: 1;
+}
 
 .create-room-form .btn {
   background: var(--accent);
@@ -393,7 +409,7 @@ input::placeholder {
 .status-connected::before,
 .status-reconnecting::before,
 .status-disconnected::before {
-  content: "";
+  content: '';
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 50%;
@@ -422,8 +438,13 @@ input::placeholder {
 }
 
 @keyframes status-pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.55; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
 
 .chat-messages {
@@ -435,8 +456,12 @@ input::placeholder {
   gap: 0.3rem;
 }
 
-.chat-messages::-webkit-scrollbar { width: 4px; }
-.chat-messages::-webkit-scrollbar-track { background: transparent; }
+.chat-messages::-webkit-scrollbar {
+  width: 4px;
+}
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
 .chat-messages::-webkit-scrollbar-thumb {
   background: var(--border);
   border-radius: 2px;
@@ -522,7 +547,9 @@ input::placeholder {
   font-size: 0.9rem;
   padding: 0.7rem 1rem;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .chat-input-form input:focus {
@@ -581,9 +608,15 @@ input::placeholder {
 
 /* ── Responsive ── */
 @media (max-width: 600px) {
-  .chat-sidebar { display: none; }
-  .card { padding: 1.5rem; }
-  .rooms-page { padding: 1.5rem 1rem; }
+  .chat-sidebar {
+    display: none;
+  }
+  .card {
+    padding: 1.5rem;
+  }
+  .rooms-page {
+    padding: 1.5rem 1rem;
+  }
 }
 
 .message-reactions {
@@ -677,14 +710,20 @@ input::placeholder {
   display: flex;
   gap: 0.2rem;
   z-index: 10;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   /* animate in */
   animation: picker-pop 0.1s ease-out;
 }
 
 @keyframes picker-pop {
-  from { opacity: 0; transform: scale(0.9) translateY(4px); }
-  to   { opacity: 1; transform: scale(1)   translateY(0);   }
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .emoji-option {
@@ -694,7 +733,9 @@ input::placeholder {
   cursor: pointer;
   padding: 0.25rem 0.3rem;
   border-radius: 6px;
-  transition: background 0.1s, transform 0.1s;
+  transition:
+    background 0.1s,
+    transform 0.1s;
   line-height: 1;
 }
 

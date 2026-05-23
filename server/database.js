@@ -34,7 +34,7 @@ db.exec(`
    )
 `)
 
-const insertRoom = db.prepare('INSERT OR IGNORE INTO rooms (name, created_by) VALUES (?, ?)');
-['general', 'random', 'tech'].forEach(name => insertRoom.run(name, null))
+const insertRoom = db.prepare('INSERT OR IGNORE INTO rooms (name, created_by) VALUES (?, ?)')
+;['general', 'random', 'tech'].forEach((name) => insertRoom.run(name, null))
 
 module.exports = db

@@ -5,9 +5,9 @@ export function useChat(roomId) {
 
   const [status, setStatus] = useState('connecting')
   const [messages, setMessages] = useState([])
-  const [typingUser, setTypingUser] = useState("")
+  const [typingUser, setTypingUser] = useState('')
   const [users, setUsers] = useState([])
-  const [joinError, setJoinError] = useState("")
+  const [joinError, setJoinError] = useState('')
 
   const wsRef = useRef(null)
   const typingTimeoutRef = useRef(null)
@@ -28,7 +28,7 @@ export function useChat(roomId) {
 
       ws.onopen = () => {
         reconnectAttemptsRef.current = 0
-        ws.send(JSON.stringify({ type: "join", roomId }))
+        ws.send(JSON.stringify({ type: 'join', roomId }))
         setStatus('connected')
       }
 
@@ -43,34 +43,34 @@ export function useChat(roomId) {
       ws.onmessage = (e) => {
         const event = JSON.parse(e.data)
 
-        if (event.type === "joined") {
+        if (event.type === 'joined') {
           setMessages(event.history)
           setUsers(event.users)
         }
-        if (event.type === "message") {
+        if (event.type === 'message') {
           setMessages((prev) => [...prev, event])
         }
-        if (event.type === "typing") {
-          setTypingUser(event.isTyping ? event.username : "")
+        if (event.type === 'typing') {
+          setTypingUser(event.isTyping ? event.username : '')
         }
-        if (event.type === "presence") {
+        if (event.type === 'presence') {
           setUsers(event.users)
         }
         if (event.type === 'reaction') {
-          setMessages(prev => prev.map(msg =>
-            msg.id === event.messageId
-              ? { ...msg, reactions: event.reactions }
-              : msg
-          ))
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === event.messageId ? { ...msg, reactions: event.reactions } : msg
+            )
+          )
         }
         if (event.type === 'more-messages') {
           isLoadingMoreRef.current = true
-          setMessages(prev => [...event.messages, ...prev])
+          setMessages((prev) => [...event.messages, ...prev])
           if (event.messages.length === 0) {
             hasMoreMessages.current = false
           }
         }
-        if (event.type === "error") {
+        if (event.type === 'error') {
           setJoinError(event.message)
         }
       }
@@ -87,14 +87,14 @@ export function useChat(roomId) {
 
   useEffect(() => {
     if (isLoadingMoreRef.current === false) {
-      bottomRef.current?.scrollIntoView({ behavior: "smooth" })
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
     isLoadingMoreRef.current = false
   }, [messages])
 
   function sendMessage(text) {
-    wsRef.current.send(JSON.stringify({ type: "message", roomId, text }))
-    wsRef.current.send(JSON.stringify({ type: "typing", roomId, isTyping: false }))
+    wsRef.current.send(JSON.stringify({ type: 'message', roomId, text }))
+    wsRef.current.send(JSON.stringify({ type: 'typing', roomId, isTyping: false }))
     clearTimeout(typingTimeoutRef.current)
   }
 
@@ -103,20 +103,22 @@ export function useChat(roomId) {
   }
 
   function sendTyping() {
-    wsRef.current.send(JSON.stringify({ type: "typing", roomId, isTyping: true }))
+    wsRef.current.send(JSON.stringify({ type: 'typing', roomId, isTyping: true }))
     clearTimeout(typingTimeoutRef.current)
     typingTimeoutRef.current = setTimeout(() => {
-      wsRef.current.send(JSON.stringify({ type: "typing", roomId, isTyping: false }))
+      wsRef.current.send(JSON.stringify({ type: 'typing', roomId, isTyping: false }))
     }, 1000)
   }
 
   function handleScroll(e) {
     if (e.target.scrollTop === 0 && messages.length > 0 && hasMoreMessages.current === true) {
-      wsRef.current.send(JSON.stringify({
-        type: "load-more-messages",
-        roomId,
-        before: messages[0].id
-      }))
+      wsRef.current.send(
+        JSON.stringify({
+          type: 'load-more-messages',
+          roomId,
+          before: messages[0].id
+        })
+      )
     }
   }
 

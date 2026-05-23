@@ -34,10 +34,10 @@ export default function Login() {
         <div className="login-logo">
           <MessageSquare size={28} color="var(--accent)" />
         </div>
-        <h1>chat<span>.app</span></h1>
-        <p style={{ marginBottom: '1.8rem', fontSize: '0.85rem' }}>
-          Welcome back
-        </p>
+        <h1>
+          chat<span>.app</span>
+        </h1>
+        <p style={{ marginBottom: '1.8rem', fontSize: '0.85rem' }}>Welcome back</p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">

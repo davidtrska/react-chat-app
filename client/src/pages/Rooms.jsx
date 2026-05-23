@@ -1,56 +1,55 @@
-import { useNavigate } from "react-router-dom"
-import { useState, useEffect, useRef } from "react"
+import { useNavigate } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
 import { Hash, Plus, Settings, ArrowRight } from 'lucide-react'
 import { jwtDecode } from 'jwt-decode'
-
 
 export default function Rooms() {
   const navigate = useNavigate()
   const token = localStorage.getItem('token')
   const username = jwtDecode(token).username
-  const [newRoom, setNewRoom] = useState("")
-  const [rooms, setRooms] =  useState([])
+  const [newRoom, setNewRoom] = useState('')
+  const [rooms, setRooms] = useState([])
   const socketRef = useRef(null)
 
+  useEffect(() => {
+    async function loadRooms() {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/rooms`, {
+        method: 'GET',
+        headers: { Authorization: 'Bearer ' + token }
+      })
+      const data = await res.json()
+      setRooms(data.rooms)
+    }
+    loadRooms()
 
-    useEffect(() => {
-      async function loadRooms() {
-        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/rooms`, {
-          method: "GET",
-          headers: { Authorization: "Bearer " + token },
-        });
-        const data = await res.json();
-        setRooms(data.rooms);
+    const ws = new WebSocket(
+      `${import.meta.env.VITE_BACKEND_URL.replace('http', 'ws')}?token=${token}`
+    )
+
+    socketRef.current = ws
+
+    ws.onmessage = (e) => {
+      const event = JSON.parse(e.data)
+      if (event.type === 'rooms-updated') {
+        setRooms(event.rooms)
       }
-      loadRooms();
-
-      const ws = new WebSocket(
-        `${import.meta.env.VITE_BACKEND_URL.replace('http', 'ws')}?token=${token}`
-      )
-      
-      socketRef.current = ws;
-    
-
-      ws.onmessage = (e) => {
-        const event = JSON.parse(e.data);
-        if (event.type === "rooms-updated") {
-          setRooms(event.rooms);
-        }
-      };
-      return () => ws.close();
-    }, []);
+    }
+    return () => ws.close()
+  }, [])
 
   function handleSubmit(e) {
     e.preventDefault()
-    if (newRoom.trim() === "") return
-    socketRef.current.send(JSON.stringify({ type: "create-room", name: newRoom }));
-    setNewRoom("")
+    if (newRoom.trim() === '') return
+    socketRef.current.send(JSON.stringify({ type: 'create-room', name: newRoom }))
+    setNewRoom('')
   }
 
   return (
     <div className="rooms-page">
       <div className="rooms-header">
-        <h1>rooms<span> / {username}</span></h1>
+        <h1>
+          rooms<span> / {username}</span>
+        </h1>
         <button className="btn btn-ghost" onClick={() => navigate('/settings')}>
           <Settings size={14} /> settings
         </button>
@@ -73,7 +72,10 @@ export default function Rooms() {
       </div>
 
       <div className="create-room">
-        <h2><Plus size={11} style={{ marginRight: '0.3rem' }} />New Room</h2>
+        <h2>
+          <Plus size={11} style={{ marginRight: '0.3rem' }} />
+          New Room
+        </h2>
         <form className="create-room-form" onSubmit={handleSubmit}>
           <input
             value={newRoom}

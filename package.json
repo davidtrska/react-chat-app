@@ -1,0 +1,16 @@
+{
+  "name": "react-chat-app",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Real-time chat app — React + Node + WebSockets + SQLite",
+  "scripts": {
+    "dev": "concurrently --names \"server,client\" --prefix-colors \"yellow,cyan\" \"npm --prefix server start\" \"npm --prefix client run dev\"",
+    "install:all": "npm install && npm --prefix server install && npm --prefix client install",
+    "format": "prettier --write \"server/**/*.js\" \"client/src/**/*.{js,jsx,css}\"",
+    "format:check": "prettier --check \"server/**/*.js\" \"client/src/**/*.{js,jsx,css}\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0",
+    "prettier": "^3.3.0"
+  }
+}

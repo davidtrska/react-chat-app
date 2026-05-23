@@ -35,7 +35,7 @@ const httpServer = http.createServer((req, res) => {
 
   if (pathname === '/register' && req.method === 'POST') {
     let body = ''
-    req.on('data', chunk => body += chunk)
+    req.on('data', (chunk) => (body += chunk))
     req.on('end', async () => {
       const { username, password } = JSON.parse(body)
 
@@ -82,7 +82,7 @@ const httpServer = http.createServer((req, res) => {
 
   if (pathname === '/login' && req.method === 'POST') {
     let body = ''
-    req.on('data', chunk => body += chunk)
+    req.on('data', (chunk) => (body += chunk))
     req.on('end', async () => {
       const { username, password } = JSON.parse(body)
 
@@ -98,7 +98,6 @@ const httpServer = http.createServer((req, res) => {
         res.writeHead(200, { 'Content-Type': 'application/json' })
         const token = jwt.sign({ username: user.username }, JWT_SECRET)
         res.end(JSON.stringify({ token }))
-
       } else {
         res.writeHead(400, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ error: 'Invalid username or password' }))

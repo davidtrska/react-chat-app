@@ -24,24 +24,27 @@ export default function Settings() {
         <div className="login-logo">
           <User size={28} color="var(--accent)" />
         </div>
-        <h1>settings<span> / profile</span></h1>
+        <h1>
+          settings<span> / profile</span>
+        </h1>
 
         <form onSubmit={handleSave}>
           <div className="form-group">
             <label>Display Name</label>
-            <input
-              value={username}
-              type="text"
-              placeholder="your name..."
-              readOnly
-            />
+            <input value={username} type="text" placeholder="your name..." readOnly />
           </div>
           <button type="submit" className="btn btn-primary">
             <Save size={15} /> Save changes
           </button>
         </form>
 
-        <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
+        <div
+          style={{
+            marginTop: '1.5rem',
+            paddingTop: '1.5rem',
+            borderTop: '1px solid var(--border)'
+          }}
+        >
           <button className="btn btn-danger" onClick={handleLogout}>
             <LogOut size={15} /> Log out
           </button>

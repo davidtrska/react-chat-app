@@ -11,7 +11,7 @@ handlers.setWss(wss)
 const HEARTBEAT_INTERVAL_MS = 30000
 
 const heartbeatInterval = setInterval(() => {
-  wss.clients.forEach(client => {
+  wss.clients.forEach((client) => {
     if (client.isAlive === false) {
       return client.terminate()
     }
@@ -36,7 +36,9 @@ wss.on('connection', (socket, req) => {
   socket.username = decoded.username
 
   socket.isAlive = true
-  socket.on('pong', () => { socket.isAlive = true })
+  socket.on('pong', () => {
+    socket.isAlive = true
+  })
 
   console.log(`${socket.username} connected`)
 
@@ -49,11 +51,11 @@ wss.on('connection', (socket, req) => {
       return
     }
 
-    if (event.type === 'join')               handlers.handleJoin(socket, event)
-    if (event.type === 'message')            handlers.handleMessage(socket, event)
-    if (event.type === 'reaction')           handlers.handleReaction(socket, event)
-    if (event.type === 'typing')             handlers.handleTyping(socket, event)
-    if (event.type === 'create-room')        handlers.handleCreateRoom(socket, event)
+    if (event.type === 'join') handlers.handleJoin(socket, event)
+    if (event.type === 'message') handlers.handleMessage(socket, event)
+    if (event.type === 'reaction') handlers.handleReaction(socket, event)
+    if (event.type === 'typing') handlers.handleTyping(socket, event)
+    if (event.type === 'create-room') handlers.handleCreateRoom(socket, event)
     if (event.type === 'load-more-messages') handlers.handleLoadMore(socket, event)
   })
 
