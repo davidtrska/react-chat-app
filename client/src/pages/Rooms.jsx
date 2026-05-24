@@ -1,16 +1,19 @@
 import { useNavigate } from 'react-router-dom'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { Hash, Plus, Settings, ArrowRight } from 'lucide-react'
 import { jwtDecode } from 'jwt-decode'
+import { useWebSocket } from '../hooks/useWebSocket'
 
 export default function Rooms() {
   const navigate = useNavigate()
   const token = localStorage.getItem('token')
   const username = jwtDecode(token).username
+  const url = `${import.meta.env.VITE_BACKEND_URL.replace('http', 'ws')}?token=${token}`
+
   const [newRoom, setNewRoom] = useState('')
   const [rooms, setRooms] = useState([])
-  const socketRef = useRef(null)
 
+  // initial list comes from HTTP
   useEffect(() => {
     async function loadRooms() {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/rooms`, {
@@ -21,26 +24,21 @@ export default function Rooms() {
       setRooms(data.rooms)
     }
     loadRooms()
+  }, [token])
 
-    const ws = new WebSocket(
-      `${import.meta.env.VITE_BACKEND_URL.replace('http', 'ws')}?token=${token}`
-    )
-
-    socketRef.current = ws
-
-    ws.onmessage = (e) => {
-      const event = JSON.parse(e.data)
+  // live updates + outgoing actions come from the shared WS hook
+  const { send } = useWebSocket(url, {
+    onMessage: (event) => {
       if (event.type === 'rooms-updated') {
         setRooms(event.rooms)
       }
     }
-    return () => ws.close()
-  }, [])
+  })
 
   function handleSubmit(e) {
     e.preventDefault()
     if (newRoom.trim() === '') return
-    socketRef.current.send(JSON.stringify({ type: 'create-room', name: newRoom }))
+    send({ type: 'create-room', name: newRoom })
     setNewRoom('')
   }
 
