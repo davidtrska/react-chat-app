@@ -5,3 +5,4 @@ dist
 .env.local
 *.db
 CLAUDE.md
+.claude
