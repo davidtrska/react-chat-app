@@ -84,7 +84,7 @@ const httpServer = http.createServer((req, res) => {
         return
       }
 
-      const newToken = jwt.sign({ username: trimmed }, JWT_SECRET)
+      const newToken = jwt.sign({ username: trimmed }, JWT_SECRET, { expiresIn: '7d' })
       res.writeHead(200, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({ token: newToken }))
     })
@@ -108,7 +108,7 @@ const httpServer = http.createServer((req, res) => {
       db.prepare('INSERT INTO users (username, password) VALUES (?, ?)').run(username, hash)
 
       res.writeHead(201, { 'Content-Type': 'application/json' })
-      const token = jwt.sign({ username }, JWT_SECRET)
+      const token = jwt.sign({ username }, JWT_SECRET, { expiresIn: '7d' })
       res.end(JSON.stringify({ token }))
     })
     return
@@ -154,7 +154,7 @@ const httpServer = http.createServer((req, res) => {
       const match = await bcrypt.compare(password, user.password)
       if (match) {
         res.writeHead(200, { 'Content-Type': 'application/json' })
-        const token = jwt.sign({ username: user.username }, JWT_SECRET)
+        const token = jwt.sign({ username: user.username }, JWT_SECRET, { expiresIn: '7d' })
         res.end(JSON.stringify({ token }))
       } else {
         res.writeHead(400, { 'Content-Type': 'application/json' })
