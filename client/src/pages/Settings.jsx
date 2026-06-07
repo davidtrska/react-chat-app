@@ -12,7 +12,7 @@ export default function Settings() {
 
   async function handleSave(e) {
     e.preventDefault()
-    setError('') 
+    setError('')
     if (name.trim() === '') {
       setError('Name cannot be empty')
       return
@@ -34,7 +34,7 @@ export default function Settings() {
       return
     }
 
-    localStorage.setItem('token', data.token) 
+    localStorage.setItem('token', data.token)
     navigate('/rooms')
   }
 

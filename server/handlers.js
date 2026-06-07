@@ -42,6 +42,12 @@ function handleJoin(socket, event) {
   const username = socket.username
 
   const room = db.prepare('SELECT id FROM rooms WHERE name = ?').get(roomId)
+  const user = db.prepare('SELECT id FROM users WHERE username = ?').get(socket.username)
+
+  if (!room || !user) {
+    socket.send(JSON.stringify({ type: 'error', message: 'Invalid room or user' }))
+    return
+  }
   const rows = db
     .prepare(
       'SELECT messages.id, messages.text, users.username, messages.created_at AS ts FROM messages JOIN users ON messages.user_id = users.id WHERE messages.room_id = ? ORDER BY messages.id DESC LIMIT 20'
@@ -82,6 +88,11 @@ function handleMessage(socket, event) {
   const user = db.prepare('SELECT id FROM users WHERE username = ?').get(socket.username)
   const room = db.prepare('SELECT id FROM rooms WHERE name = ?').get(roomId)
 
+  if (!room || !user) {
+    socket.send(JSON.stringify({ type: 'error', message: 'Invalid room or user' }))
+    return
+  }
+
   const result = db
     .prepare('INSERT INTO messages (user_id, room_id, text) VALUES (?, ?, ?)')
     .run(user.id, room.id, text)
@@ -102,6 +113,13 @@ function handleMessage(socket, event) {
 function handleLoadMore(socket, event) {
   const { roomId, before } = event
   const room = db.prepare('SELECT id FROM rooms WHERE name = ?').get(roomId)
+  const user = db.prepare('SELECT id FROM users WHERE username = ?').get(socket.username)
+
+  if (!room || !user) {
+    socket.send(JSON.stringify({ type: 'error', message: 'Invalid room or user' }))
+    return
+  }
+
   const rows = db
     .prepare(
       'SELECT messages.id, messages.text, users.username, messages.created_at AS ts FROM messages JOIN users ON messages.user_id = users.id WHERE messages.room_id = ? AND messages.id < ? ORDER BY messages.id DESC LIMIT 20'
@@ -115,6 +133,12 @@ function handleLoadMore(socket, event) {
 function handleReaction(socket, event) {
   const { messageId, emoji, roomId } = event
   const user = db.prepare('SELECT id FROM users WHERE username = ?').get(socket.username)
+  const room = db.prepare('SELECT id FROM rooms WHERE name = ?').get(roomId)
+
+  if (!room || !user) {
+    socket.send(JSON.stringify({ type: 'error', message: 'Invalid room or user' }))
+    return
+  }
 
   const result = db
     .prepare('DELETE FROM reactions WHERE message_id = ? AND user_id = ? AND emoji = ?')

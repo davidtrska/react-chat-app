@@ -52,8 +52,8 @@ export default function Chat() {
             oops<span>.</span>
           </h1>
           <p style={{ marginBottom: '1.5rem' }}>{joinError}</p>
-          <button className="btn btn-primary" onClick={() => navigate('/')}>
-            Pick a different name
+          <button className="btn btn-primary" onClick={() => navigate('/rooms')}>
+            Back to rooms
           </button>
         </div>
       </div>
