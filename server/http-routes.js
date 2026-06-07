@@ -3,6 +3,7 @@ const http = require('http')
 const url = require('url')
 const bcrypt = require('bcrypt')
 const db = require('./database')
+const handlers = require('./handlers')
 
 const { JWT_SECRET, verifyToken } = require('./auth')
 const { isUsernameTaken } = require('./state')
@@ -61,7 +62,6 @@ const httpServer = http.createServer((req, res) => {
         return
       }
 
-      // no change — return the existing token
       if (trimmed === decoded.username) {
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ token }))
@@ -85,6 +85,7 @@ const httpServer = http.createServer((req, res) => {
       }
 
       const newToken = jwt.sign({ username: trimmed }, JWT_SECRET, { expiresIn: '7d' })
+      handlers.handleUserRename(decoded.username, trimmed)
       res.writeHead(200, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({ token: newToken }))
     })

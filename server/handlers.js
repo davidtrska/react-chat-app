@@ -57,7 +57,6 @@ function handleJoin(socket, event) {
 
   if (!rooms[roomId]) rooms[roomId] = { users: {}, history: [] }
 
-  // if user is already connected (e.g. after refresh), clean up the old session
   if (connectedUsers.has(username)) {
     connectedUsers.delete(username)
     if (rooms[roomId]?.users[username]) {
@@ -128,6 +127,39 @@ function handleLoadMore(socket, event) {
   const history = rows.reverse().map((m) => ({ ...m, reactions: getReactionsForMessage(m.id) }))
 
   socket.send(JSON.stringify({ type: 'more-messages', messages: history }))
+}
+
+function handleUserRename(oldUsername, newUsername) {
+  if (!wss) return
+
+  wss.clients.forEach((client) => {
+    if (client.username === oldUsername) {
+      client.username = newUsername
+    }
+  })
+
+  if (connectedUsers.has(oldUsername)) {
+    connectedUsers.delete(oldUsername)
+    connectedUsers.add(newUsername)
+  }
+
+  const affectedRoomIds = []
+  for (const roomId in rooms) {
+    if (rooms[roomId].users[oldUsername]) {
+      rooms[roomId].users[newUsername] = rooms[roomId].users[oldUsername]
+      delete rooms[roomId].users[oldUsername]
+      affectedRoomIds.push(roomId)
+    }
+  }
+
+  const payload = JSON.stringify({ type: 'user-renamed', oldUsername, newUsername })
+  wss.clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(payload)
+    }
+  })
+
+  affectedRoomIds.forEach((roomId) => broadcastPresence(roomId))
 }
 
 function handleReaction(socket, event) {
@@ -210,5 +242,6 @@ module.exports = {
   handleCreateRoom,
   handleLoadMore,
   handleDisconnect,
-  setWss
+  setWss,
+  handleUserRename
 }

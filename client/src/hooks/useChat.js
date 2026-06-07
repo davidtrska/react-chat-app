@@ -47,6 +47,30 @@ export function useChat(roomId) {
           hasMoreMessages.current = false
         }
       }
+      if (event.type === 'user-renamed') {
+        const { oldUsername, newUsername } = event
+
+        setMessages((prev) =>
+          prev.map((msg) => {
+            let next = msg
+            if (msg.username === oldUsername) {
+              next = { ...next, username: newUsername }
+            }
+            if (next.reactions) {
+              const renamedReactions = {}
+              for (const [emoji, reactedUsers] of Object.entries(next.reactions)) {
+                renamedReactions[emoji] = reactedUsers.map((u) =>
+                  u === oldUsername ? newUsername : u
+                )
+              }
+              next = { ...next, reactions: renamedReactions }
+            }
+            return next
+          })
+        )
+
+        setUsers((prev) => prev.map((u) => (u === oldUsername ? newUsername : u)))
+      }
       if (event.type === 'error') {
         setJoinError(event.message)
       }
